@@ -1,9 +1,6 @@
 import java.io.BufferedReader;
-import java.io.FileReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
-import java.util.ArrayList;
-import java.util.List;
 import java.util.Scanner;
 
 
@@ -22,8 +19,6 @@ public class Main {
 			return reader.readLine();
 		
     }
-
-
 
     public static void main(String[] args) throws Exception {
         
@@ -51,26 +46,19 @@ public class Main {
             opcion1.generarReferencias();
             System.out.println("Referencias generadas.");
         }
-         else if( seleccionUsuario ==2)
-        {   
-            List<Integer> referencias = new ArrayList<Integer>();
+         else if(seleccionUsuario == 2) {
             System.out.println("\n");
-            System.out.println("Opcion 2\n");
-
-            String MP = input("Ingrese la cantidad de marcos de pagina ");
-            String nombreArchivo = input("Ingrese el nombre del archivo:");
-
-            try (BufferedReader br = new BufferedReader(new FileReader(nombreArchivo))) {
-                String linea;
-                while ((linea = br.readLine()) != null) {
-                    if ( linea.charAt(0) == '[' ) {
-                        String[] datos = linea.split(",");
-                        int ref = Integer.parseInt(datos[1]);
-                        referencias.add(ref);
-                    }
+            System.out.println("Opción 2\n");
+            System.out.print("Ingrese el nombre del archivo con las referencias (por ejemplo, referencias): ");
+            String nombreArchivo = scanner.next();
+            System.out.print("Ingrese el número de marcos de página: ");
+            int numMarcos = scanner.nextInt();
+            if (numMarcos <= 0) {
+                System.out.println("El número de marcos de página debe ser un número entero positivo.");
+                return;
                 }
-            } catch (IOException e) {
-                System.out.println("Error al leer el archivo: " + e.getMessage());}
-            }           
+            PaginacionSimulacion.simularPaginacion(nombreArchivo, numMarcos);
+            System.out.println("Simulación completada. Revise los resultados.");
+            }
     }
 }

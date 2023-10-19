@@ -1,6 +1,8 @@
-
 import java.util.*;
 import java.util.concurrent.locks.*;
+import java.io.BufferedReader;
+import java.io.FileReader;
+import java.io.IOException;
 
 class Pagina {
     int id;
@@ -46,10 +48,10 @@ class ProcesoThread implements Runnable {
                 try {
                     if (memoriaReal.get(i) != null && memoriaReal.get(i).id == paginaId) {
                         paginaEnMemoria = true;
-                        memoriaReal.get(i).age |= 0x80000000; // Marcar la página como accedida recientemente 
+                        memoriaReal.get(i).age |= 0x80000000;
                         break;
                     } else if (memoriaReal.get(i) == null && marcoLibre == -1) {
-                        marcoLibre = i; // Encuentrar el primer marco libre
+                        marcoLibre = i;
                     }
                 } finally {
                     locks.get(i).unlock();
@@ -58,14 +60,16 @@ class ProcesoThread implements Runnable {
 
             if (!paginaEnMemoria) {
                 numFallasPagina++;
-                if (marcoLibre != -1) {// Usar marco  libre (si hay)
+                
+
+                if (marcoLibre != -1) {
                     locks.get(marcoLibre).lock();
                     try {
                         memoriaReal.set(marcoLibre, new Pagina(paginaId));
                     } finally {
                         locks.get(marcoLibre).unlock();
                     }
-                } else {//lógica para reemplazar una página existente basada en el algoritmo de envejecimiento
+                } else {
                     int marcoAReemplazar = -1;
                     int minAge = Integer.MAX_VALUE;
                     for (int i = 0; i < numMarcos; i++) {
@@ -90,41 +94,58 @@ class ProcesoThread implements Runnable {
             }
 
             try {
-                Thread.sleep(2); // Dormir 
+                Thread.sleep(2);
             } catch (InterruptedException e) {
                 e.printStackTrace();
             }
         }
 
-        System.out.println("Número de fallas de página: " + numFallasPagina);
+        System.out.println("Número total de fallas de página: " + numFallasPagina);
     }
 }
+
 public class PaginacionSimulacion {
-    public static void main(String[] args) {
-        int numMarcos = 4; 
-        int pageSize = 256; 
 
-        List<Integer> referencias = new ArrayList<>();
-        Random random = new Random();
+    public static void simularPaginacion(String nombreArchivo, int numMarcos) {
+        List<Integer> referencias = cargarReferenciasDeArchivo(nombreArchivo);
 
-        for (int i = 0; i < 1000; i++) {
-            referencias.add(random.nextInt(100));
+        if (referencias == null || referencias.isEmpty()) {
+            System.err.println("No se pudieron cargar las referencias del archivo.");
+            return;
         }
 
-        List<Pagina> memoriaReal = new ArrayList<>(numMarcos);
-        for (int i = 0; i < numMarcos; i++) {
-            memoriaReal.add(null);
-        }
+        int pageSize = 4; // Puede ser dinámico o configurado según sea necesario
 
+        List<Pagina> memoriaReal = new ArrayList<>(Collections.nCopies(numMarcos, null));
         List<ReentrantLock> locks = new ArrayList<>();
         for (int i = 0; i < numMarcos; i++) {
             locks.add(new ReentrantLock());
         }
 
         Thread procesoThread = new Thread(new ProcesoThread(numMarcos, pageSize, referencias, memoriaReal, locks));
-        Thread envejecimientoThread = new Thread(new EnvejecimientoThread(memoriaReal, locks));
-
         procesoThread.start();
-        envejecimientoThread.start();
+    }
+
+    private static List<Integer> cargarReferenciasDeArchivo(String nombreArchivo) {
+        List<Integer> referencias = new ArrayList<>();
+        try (BufferedReader reader = new BufferedReader(new FileReader(nombreArchivo))) {
+            String linea;
+            while ((linea = reader.readLine()) != null) {
+                if (!linea.contains(",")) continue; // Ignorar líneas sin referencias de página
+                String[] partes = linea.split(",");
+                referencias.add(Integer.parseInt(partes[2].trim())); 
+            }
+        } catch (IOException e) {
+            System.err.println("Error al leer el archivo: " + e.getMessage());
+            return null;
+        }
+        return referencias;
+    }
+
+    public static void main(String[] args) {
+        // Aquí deberías manejar los argumentos y errores potenciales
+        String nombreArchivo = args[0];
+        int numMarcos = Integer.parseInt(args[1]);
+        simularPaginacion(nombreArchivo, numMarcos);
     }
 }
